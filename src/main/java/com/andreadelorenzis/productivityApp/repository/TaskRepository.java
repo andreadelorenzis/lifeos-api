@@ -17,13 +17,13 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     @Query("SELECT t FROM Task t WHERE t.goal.id = :goalId AND t.deletedAt IS NULL")
     List<Task> findByGoalId(@Param("goalId") Long goalId);
 
-    @Query("SELECT t FROM Task t WHERE t.isHabit = true AND t.deletedAt IS NULL ORDER BY t.name ASC")
+    @Query("SELECT t FROM Task t WHERE t.frequency.name != 'one-time' AND t.deletedAt IS NULL ORDER BY t.name ASC")
     List<Task> findAllHabits();
 
-    @Query("SELECT t FROM Task t WHERE t.isHabit = false AND t.deletedAt IS NULL ORDER BY t.name ASC")
+    @Query("SELECT t FROM Task t WHERE t.frequency.name = 'one-time' AND t.deletedAt IS NULL ORDER BY t.name ASC")
     List<Task> findAllOneTimeTasks();
 
-    @Query("SELECT t FROM Task t WHERE t.isHabit = true AND t.frequency.id = :frequencyId AND t.deletedAt IS NULL")
+    @Query("SELECT t FROM Task t WHERE t.frequency.id = :frequencyId AND t.deletedAt IS NULL")
     List<Task> findHabitsByFrequency(@Param("frequencyId") Long frequencyId);
 
     @Query("SELECT t FROM Task t WHERE t.completedAt IS NOT NULL AND t.deletedAt IS NULL")

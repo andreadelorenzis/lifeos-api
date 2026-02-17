@@ -18,10 +18,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "tasks", indexes = {
-    @Index(name = "idx_tasks_name", columnList = "name"),
-    @Index(name = "idx_tasks_goal_id", columnList = "goal_id"),
-    @Index(name = "idx_tasks_is_habit", columnList = "is_habit"),
-    @Index(name = "idx_tasks_deleted_at", columnList = "deleted_at")
+        @Index(name = "idx_tasks_name", columnList = "name"),
+        @Index(name = "idx_tasks_goal_id", columnList = "goal_id"),
+        @Index(name = "idx_tasks_deleted_at", columnList = "deleted_at")
 })
 public class Task {
 
@@ -35,11 +34,8 @@ public class Task {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "is_habit", nullable = false)
-    private Boolean isHabit = false;
-
     @ManyToOne
-    @JoinColumn(name = "frequency_id")
+    @JoinColumn(name = "frequency_id", nullable = false)
     private Frequency frequency;
 
     @ManyToOne
@@ -57,6 +53,9 @@ public class Task {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "quantity", precision = 19, scale = 4)
+    private BigDecimal quantity;
+
     @Column(name = "overflow_quantity", precision = 19, scale = 4)
     private BigDecimal overflowQuantity = BigDecimal.ZERO;
 
@@ -67,10 +66,9 @@ public class Task {
     public Task() {
     }
 
-    public Task(String name, String description, Boolean isHabit) {
+    public Task(String name, String description) {
         this.name = name;
         this.description = description;
-        this.isHabit = isHabit;
     }
 
     // Getters and Setters
@@ -96,14 +94,6 @@ public class Task {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Boolean getIsHabit() {
-        return isHabit;
-    }
-
-    public void setIsHabit(Boolean isHabit) {
-        this.isHabit = isHabit;
     }
 
     public Frequency getFrequency() {
@@ -148,6 +138,14 @@ public class Task {
 
     public BigDecimal getOverflowQuantity() {
         return overflowQuantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
     }
 
     public void setOverflowQuantity(BigDecimal overflowQuantity) {

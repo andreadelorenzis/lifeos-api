@@ -8,18 +8,20 @@ public class TaskResponseDTO {
     private Long id;
     private String name;
     private String description;
-    private Boolean isHabit;
     private Long frequencyId;
     private String frequencyName;
     private Long goalId;
     private String goalName;
+    private String goalUnit;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
+    private BigDecimal quantity;
     private BigDecimal overflowQuantity;
     private LocalDateTime deletedAt;
 
-    public TaskResponseDTO() {}
+    public TaskResponseDTO() {
+    }
 
     public Long getId() {
         return id;
@@ -43,14 +45,6 @@ public class TaskResponseDTO {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Boolean getIsHabit() {
-        return isHabit;
-    }
-
-    public void setIsHabit(Boolean isHabit) {
-        this.isHabit = isHabit;
     }
 
     public Long getFrequencyId() {
@@ -85,6 +79,14 @@ public class TaskResponseDTO {
         this.goalName = goalName;
     }
 
+    public String getGoalUnit() {
+        return goalUnit;
+    }
+
+    public void setGoalUnit(String goalUnit) {
+        this.goalUnit = goalUnit;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -111,6 +113,14 @@ public class TaskResponseDTO {
 
     public BigDecimal getOverflowQuantity() {
         return overflowQuantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
     }
 
     public void setOverflowQuantity(BigDecimal overflowQuantity) {

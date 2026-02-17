@@ -11,7 +11,7 @@ public class GoalDTO {
 
     private String description;
 
-    private String unitOfMeasure;
+    private String unitCode;
 
     @NotNull(message = "{NotNull.goalDTO.targetQuantity}")
     @DecimalMin(value = "0.0001", message = "{DecimalMin.goalDTO.targetQuantity}")
@@ -39,42 +39,103 @@ public class GoalDTO {
 
     private Long statusId;
 
-    public GoalDTO() {}
+    public GoalDTO() {
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getName() {
+        return name;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public String getUnitOfMeasure() { return unitOfMeasure; }
-    public void setUnitOfMeasure(String unitOfMeasure) { this.unitOfMeasure = unitOfMeasure; }
+    public String getDescription() {
+        return description;
+    }
 
-    public BigDecimal getTargetQuantity() { return targetQuantity; }
-    public void setTargetQuantity(BigDecimal targetQuantity) { this.targetQuantity = targetQuantity; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public BigDecimal getCurrentProgress() { return currentProgress; }
-    public void setCurrentProgress(BigDecimal currentProgress) { this.currentProgress = currentProgress; }
+    public String getUnitCode() {
+        return unitCode;
+    }
 
-    public LocalDateTime getDeadline() { return deadline; }
-    public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+    public void setUnitCode(String unitCode) {
+        this.unitCode = unitCode;
+    }
 
-    public Integer getDifficulty() { return difficulty; }
-    public void setDifficulty(Integer difficulty) { this.difficulty = difficulty; }
+    public BigDecimal getTargetQuantity() {
+        return targetQuantity;
+    }
 
-    public Integer getImportance() { return importance; }
-    public void setImportance(Integer importance) { this.importance = importance; }
+    public void setTargetQuantity(BigDecimal targetQuantity) {
+        this.targetQuantity = targetQuantity;
+    }
 
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public BigDecimal getCurrentProgress() {
+        return currentProgress;
+    }
 
-    public String getReward() { return reward; }
-    public void setReward(String reward) { this.reward = reward; }
+    public void setCurrentProgress(BigDecimal currentProgress) {
+        this.currentProgress = currentProgress;
+    }
 
-    public String getPunishment() { return punishment; }
-    public void setPunishment(String punishment) { this.punishment = punishment; }
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
 
-    public Long getStatusId() { return statusId; }
-    public void setStatusId(Long statusId) { this.statusId = statusId; }
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
+
+    public Integer getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(Integer difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public Integer getImportance() {
+        return importance;
+    }
+
+    public void setImportance(Integer importance) {
+        this.importance = importance;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getReward() {
+        return reward;
+    }
+
+    public void setReward(String reward) {
+        this.reward = reward;
+    }
+
+    public String getPunishment() {
+        return punishment;
+    }
+
+    public void setPunishment(String punishment) {
+        this.punishment = punishment;
+    }
+
+    public Long getStatusId() {
+        return statusId;
+    }
+
+    public void setStatusId(Long statusId) {
+        this.statusId = statusId;
+    }
 
 }

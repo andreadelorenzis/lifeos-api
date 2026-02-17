@@ -4,9 +4,11 @@ import com.andreadelorenzis.productivityApp.dto.GoalDTO;
 import com.andreadelorenzis.productivityApp.dto.GoalResponseDTO;
 import com.andreadelorenzis.productivityApp.entity.Goal;
 import com.andreadelorenzis.productivityApp.entity.GoalStatus;
+import com.andreadelorenzis.productivityApp.entity.Unit;
 import com.andreadelorenzis.productivityApp.exception.ResourceNotFoundException;
 import com.andreadelorenzis.productivityApp.repository.GoalRepository;
 import com.andreadelorenzis.productivityApp.repository.GoalStatusRepository;
+import com.andreadelorenzis.productivityApp.repository.UnitRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,10 +22,13 @@ public class GoalService {
 
     private final GoalRepository goalRepository;
     private final GoalStatusRepository statusRepository;
+    private final UnitRepository unitRepository;
 
-    public GoalService(GoalRepository goalRepository, GoalStatusRepository statusRepository) {
+    public GoalService(GoalRepository goalRepository, GoalStatusRepository statusRepository,
+            UnitRepository unitRepository) {
         this.goalRepository = goalRepository;
         this.statusRepository = statusRepository;
+        this.unitRepository = unitRepository;
     }
 
     @Transactional
@@ -33,7 +38,13 @@ public class GoalService {
         Goal goal = new Goal();
         goal.setName(dto.getName());
         goal.setDescription(dto.getDescription());
-        goal.setUnitOfMeasure(dto.getUnitOfMeasure());
+
+        if (dto.getUnitCode() != null) {
+            Unit unit = unitRepository.findByCode(dto.getUnitCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("Unit not found: " + dto.getUnitCode()));
+            goal.setUnit(unit);
+        }
+
         goal.setTargetQuantity(dto.getTargetQuantity());
         goal.setCurrentProgress(dto.getCurrentProgress() == null ? BigDecimal.ZERO : dto.getCurrentProgress());
         goal.setDeadline(dto.getDeadline());
@@ -69,13 +80,21 @@ public class GoalService {
         validateBusinessRules(dto);
 
         Goal g = goalRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
-        if (g.getDeletedAt() != null) throw new ResourceNotFoundException("Goal not found");
+        if (g.getDeletedAt() != null)
+            throw new ResourceNotFoundException("Goal not found");
 
         g.setName(dto.getName());
         g.setDescription(dto.getDescription());
-        g.setUnitOfMeasure(dto.getUnitOfMeasure());
+
+        if (dto.getUnitCode() != null) {
+            Unit unit = unitRepository.findByCode(dto.getUnitCode())
+                    .orElseThrow(() -> new ResourceNotFoundException("Unit not found: " + dto.getUnitCode()));
+            g.setUnit(unit);
+        }
+
         g.setTargetQuantity(dto.getTargetQuantity());
-        if (dto.getCurrentProgress() != null) g.setCurrentProgress(dto.getCurrentProgress());
+        if (dto.getCurrentProgress() != null)
+            g.setCurrentProgress(dto.getCurrentProgress());
         g.setDeadline(dto.getDeadline());
         g.setDifficulty(dto.getDifficulty());
         g.setImportance(dto.getImportance());
@@ -101,16 +120,19 @@ public class GoalService {
     @Transactional
     public void deleteGoal(Long id) {
         Goal g = goalRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
-        if (g.getDeletedAt() != null) return;
+        if (g.getDeletedAt() != null)
+            return;
         g.setDeletedAt(LocalDateTime.now());
         goalRepository.save(g);
     }
 
     private GoalStatus determineStatusForCreate(GoalDTO dto) {
         if (dto.getStatusId() != null) {
-            return statusRepository.findById(dto.getStatusId()).orElseThrow(() -> new ResourceNotFoundException("Status not found"));
+            return statusRepository.findById(dto.getStatusId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Status not found"));
         }
-        return statusRepository.findByName("active").orElseThrow(() -> new ResourceNotFoundException("Default status 'active' missing"));
+        return statusRepository.findByName("active")
+                .orElseThrow(() -> new ResourceNotFoundException("Default status 'active' missing"));
     }
 
     private void validateBusinessRules(GoalDTO dto) {
@@ -133,7 +155,12 @@ public class GoalService {
         r.setId(g.getId());
         r.setName(g.getName());
         r.setDescription(g.getDescription());
-        r.setUnitOfMeasure(g.getUnitOfMeasure());
+
+        if (g.getUnit() != null) {
+            r.setUnitCode(g.getUnit().getCode());
+            r.setUnitName(g.getUnit().getName());
+        }
+
         r.setTargetQuantity(g.getTargetQuantity());
         r.setCurrentProgress(g.getCurrentProgress());
         r.setDeadline(g.getDeadline());

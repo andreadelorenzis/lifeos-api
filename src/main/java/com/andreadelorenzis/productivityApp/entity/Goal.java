@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "goals", indexes = {@Index(name = "idx_goals_name", columnList = "name")})
+@Table(name = "goals", indexes = { @Index(name = "idx_goals_name", columnList = "name") })
 public class Goal {
 
     @Id
@@ -31,8 +31,9 @@ public class Goal {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "unit_of_measure")
-    private String unitOfMeasure;
+    @ManyToOne
+    @JoinColumn(name = "unit_id")
+    private Unit unit;
 
     @Column(name = "target_quantity", nullable = false, precision = 19, scale = 4)
     private BigDecimal targetQuantity;
@@ -83,55 +84,136 @@ public class Goal {
         }
     }
 
-    public Goal() {}
+    public Goal() {
+    }
 
     // Getters and setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getName() {
+        return name;
+    }
 
-    public String getUnitOfMeasure() { return unitOfMeasure; }
-    public void setUnitOfMeasure(String unitOfMeasure) { this.unitOfMeasure = unitOfMeasure; }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-    public BigDecimal getTargetQuantity() { return targetQuantity; }
-    public void setTargetQuantity(BigDecimal targetQuantity) { this.targetQuantity = targetQuantity; }
+    public String getDescription() {
+        return description;
+    }
 
-    public BigDecimal getCurrentProgress() { return currentProgress; }
-    public void setCurrentProgress(BigDecimal currentProgress) { this.currentProgress = currentProgress; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public LocalDateTime getDeadline() { return deadline; }
-    public void setDeadline(LocalDateTime deadline) { this.deadline = deadline; }
+    public Unit getUnit() {
+        return unit;
+    }
 
-    public Integer getDifficulty() { return difficulty; }
-    public void setDifficulty(Integer difficulty) { this.difficulty = difficulty; }
+    public void setUnit(Unit unit) {
+        this.unit = unit;
+    }
 
-    public Integer getImportance() { return importance; }
-    public void setImportance(Integer importance) { this.importance = importance; }
+    public BigDecimal getTargetQuantity() {
+        return targetQuantity;
+    }
 
-    public String getReason() { return reason; }
-    public void setReason(String reason) { this.reason = reason; }
+    public void setTargetQuantity(BigDecimal targetQuantity) {
+        this.targetQuantity = targetQuantity;
+    }
 
-    public String getReward() { return reward; }
-    public void setReward(String reward) { this.reward = reward; }
+    public BigDecimal getCurrentProgress() {
+        return currentProgress;
+    }
 
-    public String getPunishment() { return punishment; }
-    public void setPunishment(String punishment) { this.punishment = punishment; }
+    public void setCurrentProgress(BigDecimal currentProgress) {
+        this.currentProgress = currentProgress;
+    }
 
-    public GoalStatus getStatus() { return status; }
-    public void setStatus(GoalStatus status) { this.status = status; }
+    public LocalDateTime getDeadline() {
+        return deadline;
+    }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setDeadline(LocalDateTime deadline) {
+        this.deadline = deadline;
+    }
 
-    public LocalDateTime getCompletedAt() { return completedAt; }
-    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+    public Integer getDifficulty() {
+        return difficulty;
+    }
 
-    public LocalDateTime getDeletedAt() { return deletedAt; }
-    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+    public void setDifficulty(Integer difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public Integer getImportance() {
+        return importance;
+    }
+
+    public void setImportance(Integer importance) {
+        this.importance = importance;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getReward() {
+        return reward;
+    }
+
+    public void setReward(String reward) {
+        this.reward = reward;
+    }
+
+    public String getPunishment() {
+        return punishment;
+    }
+
+    public void setPunishment(String punishment) {
+        this.punishment = punishment;
+    }
+
+    public GoalStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(GoalStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
 
 }

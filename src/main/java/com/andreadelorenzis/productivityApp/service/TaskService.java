@@ -12,6 +12,8 @@ import com.andreadelorenzis.productivityApp.repository.GoalRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +25,8 @@ public class TaskService {
     private final FrequencyRepository frequencyRepository;
     private final GoalRepository goalRepository;
 
-    public TaskService(TaskRepository taskRepository, FrequencyRepository frequencyRepository, GoalRepository goalRepository) {
+    public TaskService(TaskRepository taskRepository, FrequencyRepository frequencyRepository,
+            GoalRepository goalRepository) {
         this.taskRepository = taskRepository;
         this.frequencyRepository = frequencyRepository;
         this.goalRepository = goalRepository;
@@ -36,17 +39,11 @@ public class TaskService {
         Task task = new Task();
         task.setName(dto.getName());
         task.setDescription(dto.getDescription());
-        task.setIsHabit(dto.getIsHabit());
 
-        // Validate and set frequency for habits
-        if (Boolean.TRUE.equals(dto.getIsHabit())) {
-            if (dto.getFrequencyId() == null) {
-                throw new IllegalArgumentException("Frequency is required for habits");
-            }
-            Frequency frequency = frequencyRepository.findById(dto.getFrequencyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
-            task.setFrequency(frequency);
-        }
+        // Validate and set frequency
+        Frequency frequency = frequencyRepository.findById(dto.getFrequencyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
+        task.setFrequency(frequency);
 
         // Validate and set goal if provided
         if (dto.getGoalId() != null) {
@@ -57,6 +54,10 @@ public class TaskService {
 
         if (dto.getOverflowQuantity() != null) {
             task.setOverflowQuantity(dto.getOverflowQuantity());
+        }
+
+        if (dto.getQuantity() != null) {
+            task.setQuantity(dto.getQuantity());
         }
 
         Task saved = taskRepository.save(task);
@@ -73,7 +74,7 @@ public class TaskService {
         // Validate goal exists
         goalRepository.findById(goalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
-        
+
         return taskRepository.findByGoalId(goalId).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -114,19 +115,11 @@ public class TaskService {
 
         task.setName(dto.getName());
         task.setDescription(dto.getDescription());
-        task.setIsHabit(dto.getIsHabit());
 
-        // Update frequency for habits
-        if (Boolean.TRUE.equals(dto.getIsHabit())) {
-            if (dto.getFrequencyId() == null) {
-                throw new IllegalArgumentException("Frequency is required for habits");
-            }
-            Frequency frequency = frequencyRepository.findById(dto.getFrequencyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
-            task.setFrequency(frequency);
-        } else {
-            task.setFrequency(null);
-        }
+        // Update frequency
+        Frequency frequency = frequencyRepository.findById(dto.getFrequencyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
+        task.setFrequency(frequency);
 
         // Update goal if provided
         if (dto.getGoalId() != null) {
@@ -139,6 +132,10 @@ public class TaskService {
 
         if (dto.getOverflowQuantity() != null) {
             task.setOverflowQuantity(dto.getOverflowQuantity());
+        }
+
+        if (dto.getQuantity() != null) {
+            task.setQuantity(dto.getQuantity());
         }
 
         Task saved = taskRepository.save(task);
@@ -164,6 +161,37 @@ public class TaskService {
 
         task.setCompletedAt(LocalDateTime.now());
         Task saved = taskRepository.save(task);
+
+        if (saved.getGoal() != null) {
+            Goal goal = saved.getGoal();
+            BigDecimal quantityToAdd = saved.getQuantity() != null ? saved.getQuantity() : BigDecimal.ONE;
+            goal.setCurrentProgress(goal.getCurrentProgress().add(quantityToAdd));
+            goalRepository.save(goal);
+        }
+
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public TaskResponseDTO uncompleteTask(Long id) {
+        Task task = taskRepository.findById(id)
+                .filter(t -> t.getDeletedAt() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        task.setCompletedAt(null);
+        Task saved = taskRepository.save(task);
+
+        if (saved.getGoal() != null) {
+            Goal goal = saved.getGoal();
+            BigDecimal quantityToSubtract = saved.getQuantity() != null ? saved.getQuantity() : BigDecimal.ONE;
+            goal.setCurrentProgress(goal.getCurrentProgress().subtract(quantityToSubtract));
+            // Ensure progress doesn't go below zero (optional, but good practice)
+            if (goal.getCurrentProgress().compareTo(BigDecimal.ZERO) < 0) {
+                goal.setCurrentProgress(BigDecimal.ZERO);
+            }
+            goalRepository.save(goal);
+        }
+
         return toResponse(saved);
     }
 
@@ -172,15 +200,12 @@ public class TaskService {
             throw new IllegalArgumentException("Task name is required");
         }
 
-        if (dto.getIsHabit() == null) {
-            throw new IllegalArgumentException("isHabit field is required");
+        if (dto.getFrequencyId() == null) {
+            throw new IllegalArgumentException("Frequency is required");
         }
 
-        // Validate frequency only for habits
-        if (Boolean.TRUE.equals(dto.getIsHabit()) && dto.getFrequencyId() != null) {
-            frequencyRepository.findById(dto.getFrequencyId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
-        }
+        frequencyRepository.findById(dto.getFrequencyId())
+                .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
     }
 
     private TaskResponseDTO toResponse(Task task) {
@@ -188,7 +213,6 @@ public class TaskService {
         dto.setId(task.getId());
         dto.setName(task.getName());
         dto.setDescription(task.getDescription());
-        dto.setIsHabit(task.getIsHabit());
 
         if (task.getFrequency() != null) {
             dto.setFrequencyId(task.getFrequency().getId());
@@ -198,11 +222,15 @@ public class TaskService {
         if (task.getGoal() != null) {
             dto.setGoalId(task.getGoal().getId());
             dto.setGoalName(task.getGoal().getName());
+            if (task.getGoal().getUnit() != null) {
+                dto.setGoalUnit(task.getGoal().getUnit().getCode());
+            }
         }
 
         dto.setCreatedAt(task.getCreatedAt());
         dto.setUpdatedAt(task.getUpdatedAt());
         dto.setCompletedAt(task.getCompletedAt());
+        dto.setQuantity(task.getQuantity());
         dto.setOverflowQuantity(task.getOverflowQuantity());
         dto.setDeletedAt(task.getDeletedAt());
 

@@ -10,23 +10,23 @@ public class TaskDTO {
 
     private String description;
 
-    @NotNull(message = "{NotNull.taskDTO.isHabit}")
-    private Boolean isHabit;
-
-    // For habits: frequency is required
+    @NotNull(message = "Frequency is required")
     private Long frequencyId;
 
     // Optional: link task to a goal
     private Long goalId;
 
+    private BigDecimal quantity;
+
     private BigDecimal overflowQuantity;
 
-    public TaskDTO() {}
+    public TaskDTO() {
+    }
 
-    public TaskDTO(String name, String description, Boolean isHabit) {
+    public TaskDTO(String name, String description, Long frequencyId) {
         this.name = name;
         this.description = description;
-        this.isHabit = isHabit;
+        this.frequencyId = frequencyId;
     }
 
     public String getName() {
@@ -43,14 +43,6 @@ public class TaskDTO {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Boolean getIsHabit() {
-        return isHabit;
-    }
-
-    public void setIsHabit(Boolean isHabit) {
-        this.isHabit = isHabit;
     }
 
     public Long getFrequencyId() {
@@ -71,6 +63,14 @@ public class TaskDTO {
 
     public BigDecimal getOverflowQuantity() {
         return overflowQuantity;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
     }
 
     public void setOverflowQuantity(BigDecimal overflowQuantity) {
