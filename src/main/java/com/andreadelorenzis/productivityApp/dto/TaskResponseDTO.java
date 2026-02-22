@@ -12,12 +12,14 @@ public class TaskResponseDTO {
     private String frequencyName;
     private Long goalId;
     private String goalName;
-    private String goalUnit;
+    private String goalUnitCode;
+    private String goalUnitName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
     private BigDecimal quantity;
     private BigDecimal overflowQuantity;
+    private BigDecimal progress;
     private LocalDateTime deletedAt;
 
     public TaskResponseDTO() {
@@ -79,12 +81,20 @@ public class TaskResponseDTO {
         this.goalName = goalName;
     }
 
-    public String getGoalUnit() {
-        return goalUnit;
+    public String getGoalUnitCode() {
+        return goalUnitCode;
     }
 
-    public void setGoalUnit(String goalUnit) {
-        this.goalUnit = goalUnit;
+    public void setGoalUnitCode(String goalUnitCode) {
+        this.goalUnitCode = goalUnitCode;
+    }
+
+    public String getGoalUnitName() {
+        return goalUnitName;
+    }
+
+    public void setGoalUnitName(String goalUnitName) {
+        this.goalUnitName = goalUnitName;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -133,5 +143,13 @@ public class TaskResponseDTO {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public BigDecimal getProgress() {
+        return progress;
+    }
+
+    public void setProgress(BigDecimal progress) {
+        this.progress = progress;
     }
 }

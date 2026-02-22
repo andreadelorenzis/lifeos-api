@@ -12,6 +12,7 @@ public class GoalResponseDTO {
     private String unitName;
     private BigDecimal targetQuantity;
     private BigDecimal currentProgress;
+    private BigDecimal idealProgress;
     private LocalDateTime deadline;
     private Integer difficulty;
     private Integer importance;
@@ -82,6 +83,14 @@ public class GoalResponseDTO {
 
     public void setCurrentProgress(BigDecimal currentProgress) {
         this.currentProgress = currentProgress;
+    }
+
+    public BigDecimal getIdealProgress() {
+        return idealProgress;
+    }
+
+    public void setIdealProgress(BigDecimal idealProgress) {
+        this.idealProgress = idealProgress;
     }
 
     public LocalDateTime getDeadline() {

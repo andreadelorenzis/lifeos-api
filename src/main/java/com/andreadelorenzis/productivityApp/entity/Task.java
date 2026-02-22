@@ -59,6 +59,9 @@ public class Task {
     @Column(name = "overflow_quantity", precision = 19, scale = 4)
     private BigDecimal overflowQuantity = BigDecimal.ZERO;
 
+    @Column(name = "progress", precision = 19, scale = 4)
+    private BigDecimal progress;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -150,6 +153,14 @@ public class Task {
 
     public void setOverflowQuantity(BigDecimal overflowQuantity) {
         this.overflowQuantity = overflowQuantity;
+    }
+
+    public BigDecimal getProgress() {
+        return progress;
+    }
+
+    public void setProgress(BigDecimal progress) {
+        this.progress = progress;
     }
 
     public LocalDateTime getDeletedAt() {

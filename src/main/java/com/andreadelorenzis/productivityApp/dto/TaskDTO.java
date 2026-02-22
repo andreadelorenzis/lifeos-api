@@ -13,12 +13,13 @@ public class TaskDTO {
     @NotNull(message = "Frequency is required")
     private Long frequencyId;
 
-    // Optional: link task to a goal
     private Long goalId;
 
     private BigDecimal quantity;
 
     private BigDecimal overflowQuantity;
+
+    private BigDecimal progress;
 
     public TaskDTO() {
     }
@@ -75,5 +76,13 @@ public class TaskDTO {
 
     public void setOverflowQuantity(BigDecimal overflowQuantity) {
         this.overflowQuantity = overflowQuantity;
+    }
+
+    public BigDecimal getProgress() {
+        return progress;
+    }
+
+    public void setProgress(BigDecimal progress) {
+        this.progress = progress;
     }
 }

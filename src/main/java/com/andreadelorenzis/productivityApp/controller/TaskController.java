@@ -1,6 +1,7 @@
 package com.andreadelorenzis.productivityApp.controller;
 
 import com.andreadelorenzis.productivityApp.dto.TaskDTO;
+import com.andreadelorenzis.productivityApp.dto.TaskProgressUpdateDTO;
 import com.andreadelorenzis.productivityApp.dto.TaskResponseDTO;
 import com.andreadelorenzis.productivityApp.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -142,5 +143,19 @@ public class TaskController {
             @Parameter(description = "Task ID") @PathVariable Long id) {
         TaskResponseDTO uncompleted = taskService.uncompleteTask(id);
         return ResponseEntity.ok(uncompleted);
+    }
+
+    @PostMapping("/{id}/progress")
+    @Operation(summary = "Add time-based progress to a task", description = "Updates a task's progress based on a quantity in seconds, converting to the goal's unit")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task progress updated", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TaskResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid request or unit type", content = @Content(mediaType = "application/json")),
+            @ApiResponse(responseCode = "404", description = "Task not found", content = @Content(mediaType = "application/json"))
+    })
+    public ResponseEntity<TaskResponseDTO> addProgress(
+            @Parameter(description = "Task ID") @PathVariable Long id,
+            @Valid @RequestBody TaskProgressUpdateDTO dto) {
+        TaskResponseDTO updated = taskService.addTaskProgress(id, dto);
+        return ResponseEntity.ok(updated);
     }
 }

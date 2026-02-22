@@ -1,6 +1,7 @@
 package com.andreadelorenzis.productivityApp.service;
 
 import com.andreadelorenzis.productivityApp.dto.TaskDTO;
+import com.andreadelorenzis.productivityApp.dto.TaskProgressUpdateDTO;
 import com.andreadelorenzis.productivityApp.dto.TaskResponseDTO;
 import com.andreadelorenzis.productivityApp.entity.Task;
 import com.andreadelorenzis.productivityApp.entity.Frequency;
@@ -60,7 +61,19 @@ public class TaskService {
             task.setQuantity(dto.getQuantity());
         }
 
+        if (dto.getProgress() != null) {
+            task.setProgress(dto.getProgress());
+            checkAndHandleCompletion(task);
+        }
+
         Task saved = taskRepository.save(task);
+
+        // If task was marked completed in checkAndHandleCompletion, we need to update
+        // goal
+        if (saved.getCompletedAt() != null && saved.getGoal() != null) {
+            updateGoalProgress(saved, true);
+        }
+
         return toResponse(saved);
     }
 
@@ -138,7 +151,26 @@ public class TaskService {
             task.setQuantity(dto.getQuantity());
         }
 
+        boolean wasCompleted = task.getCompletedAt() != null;
+
+        if (dto.getProgress() != null) {
+            task.setProgress(dto.getProgress());
+            checkAndHandleCompletion(task);
+        }
+
+        boolean isCompleted = task.getCompletedAt() != null;
+
         Task saved = taskRepository.save(task);
+
+        // Handle goal progress update if completion status changed
+        if (saved.getGoal() != null) {
+            if (!wasCompleted && isCompleted) {
+                updateGoalProgress(saved, true);
+            } else if (wasCompleted && !isCompleted) {
+                updateGoalProgress(saved, false);
+            }
+        }
+
         return toResponse(saved);
     }
 
@@ -160,6 +192,9 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         task.setCompletedAt(LocalDateTime.now());
+        if (task.getQuantity() != null) {
+            task.setProgress(task.getQuantity());
+        }
         Task saved = taskRepository.save(task);
 
         if (saved.getGoal() != null) {
@@ -179,13 +214,16 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         task.setCompletedAt(null);
+        if (task.getQuantity() != null) {
+            task.setProgress(BigDecimal.ZERO);
+        }
         Task saved = taskRepository.save(task);
 
         if (saved.getGoal() != null) {
             Goal goal = saved.getGoal();
             BigDecimal quantityToSubtract = saved.getQuantity() != null ? saved.getQuantity() : BigDecimal.ONE;
             goal.setCurrentProgress(goal.getCurrentProgress().subtract(quantityToSubtract));
-            // Ensure progress doesn't go below zero (optional, but good practice)
+            // Ensure progress doesn't go below zero
             if (goal.getCurrentProgress().compareTo(BigDecimal.ZERO) < 0) {
                 goal.setCurrentProgress(BigDecimal.ZERO);
             }
@@ -208,6 +246,81 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
     }
 
+    private void checkAndHandleCompletion(Task task) {
+        if (task.getQuantity() != null && task.getProgress() != null) {
+            if (task.getProgress().compareTo(task.getQuantity()) >= 0) {
+                if (task.getCompletedAt() == null) {
+                    task.setCompletedAt(LocalDateTime.now());
+                }
+            } else {
+                if (task.getCompletedAt() != null) {
+                    task.setCompletedAt(null);
+                }
+            }
+        }
+    }
+
+    private void updateGoalProgress(Task task, boolean add) {
+        if (task.getQuantity() != null) {
+            Goal goal = task.getGoal();
+            BigDecimal quantityToUpdate = task.getQuantity();
+
+            if (add) {
+                goal.setCurrentProgress(goal.getCurrentProgress().add(quantityToUpdate));
+            } else {
+                goal.setCurrentProgress(goal.getCurrentProgress().subtract(quantityToUpdate));
+                if (goal.getCurrentProgress().compareTo(BigDecimal.ZERO) < 0) {
+                    goal.setCurrentProgress(BigDecimal.ZERO);
+                }
+            }
+            goalRepository.save(goal);
+        }
+    }
+
+    @Transactional
+    public TaskResponseDTO addTaskProgress(Long id, TaskProgressUpdateDTO dto) {
+        Task task = taskRepository.findById(id)
+                .filter(t -> t.getDeletedAt() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        if (task.getGoal() == null) {
+            throw new IllegalArgumentException("Task is not linked to any goal");
+        }
+
+        Goal goal = task.getGoal();
+        if (goal.getUnit() == null) {
+            throw new IllegalArgumentException("Goal does not have a unit");
+        }
+
+        if (dto.getQuantity() == null) {
+            throw new IllegalArgumentException("Quantity must be provided");
+        }
+
+        BigDecimal quantityToAdd = dto.getQuantity();
+
+        BigDecimal currentProgress = task.getProgress() != null ? task.getProgress() : BigDecimal.ZERO;
+        BigDecimal newProgress = currentProgress.add(quantityToAdd);
+
+        if (newProgress.compareTo(BigDecimal.ZERO) < 0) {
+            newProgress = BigDecimal.ZERO;
+        }
+
+        task.setProgress(newProgress);
+
+        checkAndHandleCompletion(task);
+
+        Task saved = taskRepository.save(task);
+
+        BigDecimal newGoalProgress = goal.getCurrentProgress().add(quantityToAdd);
+        if (newGoalProgress.compareTo(BigDecimal.ZERO) < 0) {
+            newGoalProgress = BigDecimal.ZERO;
+        }
+        goal.setCurrentProgress(newGoalProgress);
+        goalRepository.save(goal);
+
+        return toResponse(saved);
+    }
+
     private TaskResponseDTO toResponse(Task task) {
         TaskResponseDTO dto = new TaskResponseDTO();
         dto.setId(task.getId());
@@ -223,7 +336,8 @@ public class TaskService {
             dto.setGoalId(task.getGoal().getId());
             dto.setGoalName(task.getGoal().getName());
             if (task.getGoal().getUnit() != null) {
-                dto.setGoalUnit(task.getGoal().getUnit().getCode());
+                dto.setGoalUnitCode(task.getGoal().getUnit().getCode());
+                dto.setGoalUnitName(task.getGoal().getUnit().getName());
             }
         }
 
@@ -232,6 +346,7 @@ public class TaskService {
         dto.setCompletedAt(task.getCompletedAt());
         dto.setQuantity(task.getQuantity());
         dto.setOverflowQuantity(task.getOverflowQuantity());
+        dto.setProgress(task.getProgress());
         dto.setDeletedAt(task.getDeletedAt());
 
         return dto;
