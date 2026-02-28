@@ -15,6 +15,10 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
 
 @Entity
 @Table(name = "tasks", indexes = {
@@ -64,6 +68,24 @@ public class Task {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @Column(name = "urgent", nullable = false)
+    private boolean urgent = false;
+
+    @ElementCollection
+    @CollectionTable(name = "task_week_days", joinColumns = @JoinColumn(name = "task_id"))
+    @Column(name = "weekday")
+    private Set<Integer> weekDays = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "task_month_days", joinColumns = @JoinColumn(name = "task_id"))
+    @Column(name = "day_of_month")
+    private Set<Integer> monthDays = new HashSet<>();
+
+    @ElementCollection
+    @CollectionTable(name = "task_year_days", joinColumns = @JoinColumn(name = "task_id"))
+    @Column(name = "day_of_year")
+    private Set<Integer> yearDays = new HashSet<>();
 
     // Constructors
     public Task() {
@@ -169,5 +191,37 @@ public class Task {
 
     public void setDeletedAt(LocalDateTime deletedAt) {
         this.deletedAt = deletedAt;
+    }
+
+    public Set<Integer> getWeekDays() {
+        return weekDays;
+    }
+
+    public void setWeekDays(Set<Integer> weekDays) {
+        this.weekDays = weekDays;
+    }
+
+    public Set<Integer> getMonthDays() {
+        return monthDays;
+    }
+
+    public void setMonthDays(Set<Integer> monthDays) {
+        this.monthDays = monthDays;
+    }
+
+    public Set<Integer> getYearDays() {
+        return yearDays;
+    }
+
+    public void setYearDays(Set<Integer> yearDays) {
+        this.yearDays = yearDays;
+    }
+
+    public boolean isUrgent() {
+        return urgent;
+    }
+
+    public void setUrgent(boolean urgent) {
+        this.urgent = urgent;
     }
 }

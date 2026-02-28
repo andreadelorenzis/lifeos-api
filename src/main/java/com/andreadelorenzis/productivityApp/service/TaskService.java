@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +49,8 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
         task.setFrequency(frequency);
 
+        assignSelectedDays(task, dto);
+
         // Validate and set goal if provided
         if (dto.getGoalId() != null) {
             Goal goal = goalRepository.findById(dto.getGoalId())
@@ -61,7 +66,8 @@ public class TaskService {
             task.setQuantity(dto.getQuantity());
         }
 
-        if (dto.getProgress() != null) {
+        if (dto.getProgress() != null && dto.getQuantity() != null
+                && dto.getQuantity().compareTo(BigDecimal.ZERO) == 1) {
             task.setProgress(dto.getProgress());
             checkAndHandleCompletion(task);
         }
@@ -78,9 +84,31 @@ public class TaskService {
     }
 
     public List<TaskResponseDTO> listTasks() {
-        return taskRepository.findAllActive().stream()
-                .map(this::toResponse)
+        return assignTaskOrderAndSort(taskRepository.findAllActive());
+    }
+
+    public List<TaskResponseDTO> getTasksDueToday(boolean includeOneTimeTasks) {
+        LocalDate today = LocalDate.now();
+
+        int dayOfWeek = today.getDayOfWeek().getValue();
+        int dayOfMonth = today.getDayOfMonth();
+        boolean isLastDayOfMonth = dayOfMonth == today.lengthOfMonth();
+
+        int dayOfYear = today.getDayOfYear();
+        boolean isLastDayOfYear = dayOfYear == today.lengthOfYear();
+
+        List<Object[]> rows = taskRepository.findTasksDueToday(
+                dayOfWeek,
+                dayOfMonth,
+                isLastDayOfMonth,
+                dayOfYear,
+                isLastDayOfYear,
+                includeOneTimeTasks);
+        List<Task> tasks = rows.stream()
+                .map(row -> (Task) row[0])
                 .collect(Collectors.toList());
+
+        return assignTaskOrderAndSort(tasks);
     }
 
     public List<TaskResponseDTO> listTasksByGoal(Long goalId) {
@@ -88,27 +116,64 @@ public class TaskService {
         goalRepository.findById(goalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal not found"));
 
-        return taskRepository.findByGoalId(goalId).stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return assignTaskOrderAndSort(taskRepository.findByGoalId(goalId));
     }
 
     public List<TaskResponseDTO> listHabits() {
-        return taskRepository.findAllHabits().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return assignTaskOrderAndSort(taskRepository.findAllHabits());
+    }
+
+    public List<TaskResponseDTO> listTasksByFrequency(Long frequencyId) {
+        return assignTaskOrderAndSort(taskRepository.findTasksByFrequency(frequencyId));
     }
 
     public List<TaskResponseDTO> listOneTimeTasks() {
-        return taskRepository.findAllOneTimeTasks().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return assignTaskOrderAndSort(taskRepository.findAllOneTimeTasks());
     }
 
     public List<TaskResponseDTO> searchTasks(String name) {
-        return taskRepository.searchByName(name).stream()
+        return assignTaskOrderAndSort(taskRepository.searchByName(name));
+    }
+
+    private List<TaskResponseDTO> assignTaskOrderAndSort(List<Task> tasks) {
+        // Base order (importance DESC, created ASC/DESC)
+        tasks.sort((t1, t2) -> {
+            Goal goal1 = t1.getGoal();
+            Goal goal2 = t2.getGoal();
+
+            Integer imp1 = goal1 != null ? goal1.getImportance() : -1;
+            Integer imp2 = goal2 != null ? goal2.getImportance() : -1;
+            int impCompare = imp2.compareTo(imp1); // DESC
+            if (impCompare != 0)
+                return impCompare;
+
+            LocalDateTime cat1 = t1.getCreatedAt();
+            LocalDateTime cat2 = t2.getCreatedAt();
+            if (cat1 != null && cat2 != null) {
+                return cat2.compareTo(cat1); // DESC
+            }
+            return 0;
+        });
+
+        List<TaskResponseDTO> dtos = tasks.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+
+        // Assign taskOrder
+        for (int i = 0; i < dtos.size(); i++) {
+            dtos.get(i).setTaskOrder(i + 1);
+        }
+
+        // Final view order: urgency trumps the base rank
+        dtos.sort((a, b) -> {
+            if (a.isUrgent() && !b.isUrgent())
+                return -1;
+            if (!a.isUrgent() && b.isUrgent())
+                return 1;
+            return a.getTaskOrder().compareTo(b.getTaskOrder());
+        });
+
+        return dtos;
     }
 
     public TaskResponseDTO getTask(Long id) {
@@ -134,6 +199,8 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("Frequency not found"));
         task.setFrequency(frequency);
 
+        assignSelectedDays(task, dto);
+
         // Update goal if provided
         if (dto.getGoalId() != null) {
             Goal goal = goalRepository.findById(dto.getGoalId())
@@ -157,6 +224,8 @@ public class TaskService {
             task.setProgress(dto.getProgress());
             checkAndHandleCompletion(task);
         }
+
+        task.setUrgent(dto.isUrgent());
 
         boolean isCompleted = task.getCompletedAt() != null;
 
@@ -230,6 +299,18 @@ public class TaskService {
             goalRepository.save(goal);
         }
 
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public TaskResponseDTO setToUrgent(Long id, boolean urgent) {
+        Task task = taskRepository.findById(id)
+                .filter(t -> t.getDeletedAt() == null)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        task.setUrgent(urgent);
+
+        Task saved = taskRepository.save(task);
         return toResponse(saved);
     }
 
@@ -321,6 +402,36 @@ public class TaskService {
         return toResponse(saved);
     }
 
+    private void assignSelectedDays(Task task, TaskDTO dto) {
+        if (task.getWeekDays() != null)
+            task.getWeekDays().clear();
+        else
+            task.setWeekDays(new HashSet<>());
+
+        if (task.getMonthDays() != null)
+            task.getMonthDays().clear();
+        else
+            task.setMonthDays(new HashSet<>());
+
+        if (task.getYearDays() != null)
+            task.getYearDays().clear();
+        else
+            task.setYearDays(new HashSet<>());
+
+        if (dto.getSelectedDays() == null || task.getFrequency() == null) {
+            return;
+        }
+
+        String freqName = task.getFrequency().getName().toLowerCase();
+        if ("weekly".equals(freqName)) {
+            task.getWeekDays().addAll(dto.getSelectedDays());
+        } else if ("monthly".equals(freqName)) {
+            task.getMonthDays().addAll(dto.getSelectedDays());
+        } else if ("yearly".equals(freqName)) {
+            task.getYearDays().addAll(dto.getSelectedDays());
+        }
+    }
+
     private TaskResponseDTO toResponse(Task task) {
         TaskResponseDTO dto = new TaskResponseDTO();
         dto.setId(task.getId());
@@ -330,6 +441,20 @@ public class TaskService {
         if (task.getFrequency() != null) {
             dto.setFrequencyId(task.getFrequency().getId());
             dto.setFrequencyName(task.getFrequency().getName());
+
+            String freqName = task.getFrequency().getName().toLowerCase();
+            if ("weekly".equals(freqName)) {
+                dto.setSelectedDays(
+                        task.getWeekDays() != null ? new ArrayList<>(task.getWeekDays()) : new ArrayList<>());
+            } else if ("monthly".equals(freqName)) {
+                dto.setSelectedDays(
+                        task.getMonthDays() != null ? new ArrayList<>(task.getMonthDays()) : new ArrayList<>());
+            } else if ("yearly".equals(freqName)) {
+                dto.setSelectedDays(
+                        task.getYearDays() != null ? new ArrayList<>(task.getYearDays()) : new ArrayList<>());
+            } else {
+                dto.setSelectedDays(new ArrayList<>());
+            }
         }
 
         if (task.getGoal() != null) {
@@ -348,6 +473,7 @@ public class TaskService {
         dto.setOverflowQuantity(task.getOverflowQuantity());
         dto.setProgress(task.getProgress());
         dto.setDeletedAt(task.getDeletedAt());
+        dto.setUrgent(task.isUrgent());
 
         return dto;
     }

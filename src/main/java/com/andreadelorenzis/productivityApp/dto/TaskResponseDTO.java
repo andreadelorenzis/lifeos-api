@@ -2,6 +2,7 @@ package com.andreadelorenzis.productivityApp.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class TaskResponseDTO {
 
@@ -14,6 +15,7 @@ public class TaskResponseDTO {
     private String goalName;
     private String goalUnitCode;
     private String goalUnitName;
+    private Integer taskOrder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime completedAt;
@@ -21,6 +23,8 @@ public class TaskResponseDTO {
     private BigDecimal overflowQuantity;
     private BigDecimal progress;
     private LocalDateTime deletedAt;
+    private List<Integer> selectedDays;
+    private boolean urgent;
 
     public TaskResponseDTO() {
     }
@@ -97,6 +101,14 @@ public class TaskResponseDTO {
         this.goalUnitName = goalUnitName;
     }
 
+    public Integer getTaskOrder() {
+        return taskOrder;
+    }
+
+    public void setTaskOrder(Integer taskOrder) {
+        this.taskOrder = taskOrder;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -151,5 +163,21 @@ public class TaskResponseDTO {
 
     public void setProgress(BigDecimal progress) {
         this.progress = progress;
+    }
+
+    public List<Integer> getSelectedDays() {
+        return selectedDays;
+    }
+
+    public void setSelectedDays(List<Integer> selectedDays) {
+        this.selectedDays = selectedDays;
+    }
+
+    public boolean isUrgent() {
+        return urgent;
+    }
+
+    public void setUrgent(boolean urgent) {
+        this.urgent = urgent;
     }
 }

@@ -42,13 +42,13 @@ public class TaskController {
     }
 
     @GetMapping
-    @Operation(summary = "List all tasks", description = "Retrieve all active (non-deleted) tasks with optional filtering by type, goal, or search term")
+    @Operation(summary = "List all tasks", description = "Retrieve all active (non-deleted) tasks with optional filtering by frequency, goal, or search term")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved tasks", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TaskResponseDTO.class))),
             @ApiResponse(responseCode = "404", description = "Goal not found when filtering by goalId", content = @Content(mediaType = "application/json"))
     })
     public ResponseEntity<List<TaskResponseDTO>> listTasks(
-            @Parameter(description = "Filter by task type: 'habit' or 'one-time'") @RequestParam(required = false) String type,
+            @Parameter(description = "Filter tasks by frequency ID") @RequestParam(required = false) Long frequencyId,
             @Parameter(description = "Filter tasks by goal ID") @RequestParam(required = false) Long goalId,
             @Parameter(description = "Search tasks by name (partial match)") @RequestParam(required = false) String search) {
 
@@ -58,14 +58,20 @@ public class TaskController {
             tasks = taskService.searchTasks(search);
         } else if (goalId != null) {
             tasks = taskService.listTasksByGoal(goalId);
-        } else if ("habit".equalsIgnoreCase(type)) {
-            tasks = taskService.listHabits();
-        } else if ("one-time".equalsIgnoreCase(type)) {
-            tasks = taskService.listOneTimeTasks();
+        } else if (frequencyId != null) {
+            tasks = taskService.listTasksByFrequency(frequencyId);
         } else {
             tasks = taskService.listTasks();
         }
 
+        return ResponseEntity.ok(tasks);
+    }
+
+    @GetMapping("/due-today")
+    @Operation(summary = "Get tasks due today", description = "Retrieve tasks that are scheduled for today based on frequency and clamping rules")
+    public ResponseEntity<List<TaskResponseDTO>> getTasksDueToday(
+            @Parameter(description = "Whether to include one-time tasks in the result") @RequestParam(required = false, defaultValue = "false") boolean includeOneTimeTasks) {
+        List<TaskResponseDTO> tasks = taskService.getTasksDueToday(includeOneTimeTasks);
         return ResponseEntity.ok(tasks);
     }
 
@@ -156,6 +162,19 @@ public class TaskController {
             @Parameter(description = "Task ID") @PathVariable Long id,
             @Valid @RequestBody TaskProgressUpdateDTO dto) {
         TaskResponseDTO updated = taskService.addTaskProgress(id, dto);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PatchMapping("/{id}/urgent")
+    @Operation(summary = "Set task urgency", description = "Toggle the urgent status of a task")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Task urgency updated", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TaskResponseDTO.class))),
+            @ApiResponse(responseCode = "404", description = "Task not found", content = @Content(mediaType = "application/json"))
+    })
+    public ResponseEntity<TaskResponseDTO> setToUrgent(
+            @Parameter(description = "Task ID") @PathVariable Long id,
+            @Parameter(description = "Urgency status") @RequestParam boolean urgent) {
+        TaskResponseDTO updated = taskService.setToUrgent(id, urgent);
         return ResponseEntity.ok(updated);
     }
 }

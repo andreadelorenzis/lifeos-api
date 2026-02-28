@@ -2,6 +2,7 @@ package com.andreadelorenzis.productivityApp.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.List;
 
 public class TaskDTO {
 
@@ -20,6 +21,10 @@ public class TaskDTO {
     private BigDecimal overflowQuantity;
 
     private BigDecimal progress;
+
+    private List<Integer> selectedDays;
+
+    private boolean urgent = false;
 
     public TaskDTO() {
     }
@@ -84,5 +89,21 @@ public class TaskDTO {
 
     public void setProgress(BigDecimal progress) {
         this.progress = progress;
+    }
+
+    public List<Integer> getSelectedDays() {
+        return selectedDays;
+    }
+
+    public void setSelectedDays(List<Integer> selectedDays) {
+        this.selectedDays = selectedDays;
+    }
+
+    public boolean isUrgent() {
+        return urgent;
+    }
+
+    public void setUrgent(boolean urgent) {
+        this.urgent = urgent;
     }
 }
