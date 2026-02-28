@@ -18,6 +18,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -92,23 +94,61 @@ public class TaskService {
 
         int dayOfWeek = today.getDayOfWeek().getValue();
         int dayOfMonth = today.getDayOfMonth();
-        boolean isLastDayOfMonth = dayOfMonth == today.lengthOfMonth();
-
         int dayOfYear = today.getDayOfYear();
+
+        boolean isLastDayOfMonth = dayOfMonth == today.lengthOfMonth();
         boolean isLastDayOfYear = dayOfYear == today.lengthOfYear();
 
-        List<Object[]> rows = taskRepository.findTasksDueToday(
-                dayOfWeek,
-                dayOfMonth,
-                isLastDayOfMonth,
-                dayOfYear,
-                isLastDayOfYear,
-                includeOneTimeTasks);
-        List<Task> tasks = rows.stream()
-                .map(row -> (Task) row[0])
-                .collect(Collectors.toList());
+        List<Task> tasks = taskRepository.findAllActive();
 
-        return assignTaskOrderAndSort(tasks);
+        List<Task> dueTasks = new ArrayList<>();
+        for (Task t : tasks) {
+            boolean isDue = isTaskDue(
+                    t,
+                    dayOfWeek,
+                    dayOfMonth,
+                    isLastDayOfMonth,
+                    dayOfYear,
+                    isLastDayOfYear,
+                    includeOneTimeTasks);
+            if (isDue) {
+                dueTasks.add(t);
+            }
+        }
+        return assignTaskOrderAndSort(dueTasks);
+    }
+
+    private boolean isTaskDue(
+            Task task,
+            int dayOfWeek,
+            int dayOfMonth,
+            boolean isLastDayOfMonth,
+            int dayOfYear,
+            boolean isLastDayOfYear,
+            boolean includeOneTimeTasks) {
+
+        String frequency = task.getFrequency().getName();
+
+        switch (frequency) {
+            case "one-time":
+                return includeOneTimeTasks;
+            case "daily":
+                return true;
+            case "weekly":
+                return Optional.ofNullable(task.getWeekDays())
+                        .orElse(Set.of())
+                        .contains(dayOfWeek);
+            case "monthly":
+                Set<Integer> mdays = Optional.ofNullable(task.getMonthDays()).orElse(Set.of());
+                return mdays.contains(dayOfMonth)
+                        || (isLastDayOfMonth && mdays.stream().anyMatch(d -> d > dayOfMonth));
+            case "yearly":
+                Set<Integer> ydays = Optional.ofNullable(task.getYearDays()).orElse(Set.of());
+                return ydays.contains(dayOfYear)
+                        || (isLastDayOfYear && ydays.stream().anyMatch(d -> d > dayOfYear));
+            default:
+                return false;
+        }
     }
 
     public List<TaskResponseDTO> listTasksByGoal(Long goalId) {
